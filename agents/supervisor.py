@@ -72,9 +72,6 @@ class SupervisorAgent:
             # Step 1: Understand the task (but still pass only the company name downstream)
             _ = self._interpret_request(f"Research the company {company_name}")
 
-            print("\n[DEBUG] Supervisor → Researcher payload:",
-              {"company_name": company_name})
-
             # Step 2: Handoff to Researcher
             to_researcher = HandoffMessage(
                 task_name="company_research",
@@ -84,7 +81,6 @@ class SupervisorAgent:
             )
 
             researcher_result = self.researcher.run(to_researcher)
-            print("\n[DEBUG] Researcher → Supervisor result:", asdict(researcher_result))
             if researcher_result.status != "completed":
                 return HandoffMessage(
                     task_name=message.task_name,
@@ -96,10 +92,6 @@ class SupervisorAgent:
 
             # Step 3: Handoff to Document Creator with structured research
             research_payload = researcher_result.payload
-            print("\n[DEBUG] Supervisor → DocumentCreator payload:", {
-            "company_name": company_name,
-            "research": research_payload
-        })
             to_doc = HandoffMessage(
                 task_name="create_report",
                 payload={

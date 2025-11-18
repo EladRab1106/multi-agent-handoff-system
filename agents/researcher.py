@@ -22,8 +22,6 @@ def _tavily_search(query: str, max_results: int = 5) -> Dict[str, Any]:
 
     Expects TAVILY_API_KEY to be set. Raises RuntimeError on failure.
     """
-    print(f"[DEBUG] Tavily query: {query}")
-
     api_key = os.getenv("TAVILY_API_KEY")
     if not api_key:
         raise RuntimeError("Tavily API key not set")
@@ -66,8 +64,6 @@ def _run_all_sections(company_name: str) -> Tuple[Dict[str, List[Dict[str, Any]]
         section_answers: List[str] = []
         try:
             data = _tavily_search(query)
-            print(f"[DEBUG] Raw Tavily response for section '{section}' query='{query}': {data}")
-
         except Exception as exc:
             # Propagate Tavily failures so the Supervisor sees a real error
             raise RuntimeError(f"Tavily search failed: {exc}")
@@ -83,11 +79,6 @@ def _run_all_sections(company_name: str) -> Tuple[Dict[str, List[Dict[str, Any]]
 
         results_by_section[section] = section_results
         answers_by_section[section] = section_answers
-        print(
-    f"[DEBUG] Section '{section}' - "
-    f"answers={len(section_answers)}, results={len(section_results)}"
-)
-
 
     return results_by_section, answers_by_section
 
@@ -194,15 +185,6 @@ class ResearcherAgent:
             financials_text = _collect_text(results_by_section.get("financials", []), answers_by_section.get("financials", []))
             competitors_text = _collect_text(results_by_section.get("competitors", []), answers_by_section.get("competitors", []))
             news_text = _collect_text(results_by_section.get("news", []), answers_by_section.get("news", []))
-            print("[DEBUG] Combined text lengths:", {
-    "overview": len(overview_text),
-    "products": len(products_text),
-    "financials": len(financials_text),
-    "competitors": len(competitors_text),
-    "news": len(news_text),
-})
-
-
             # 3) Build canonical list of source URLs from Tavily results
             urls_seen: set[str] = set()
             sources_urls: List[str] = []
@@ -226,9 +208,6 @@ class ResearcherAgent:
                     sources_urls.append(url)
 
             sources_urls_str = "\n".join(sources_urls)
-            print(f"[DEBUG] Extracted source URLs ({len(sources_urls)}):", sources_urls)
-
-
             # 4) Use LLM only to structure/condense into JSON
             raw_json = self._extraction_chain.invoke(
                 {
@@ -250,6 +229,10 @@ class ResearcherAgent:
                 end = raw_json.rfind("}") + 1
                 structured = json.loads(raw_json[start:end])
 
+            # Whitelist allowed keys to enforce strict schema
+            allowed = {"company", "summary", "products", "financials", "competitors", "sources"}
+            structured = {k: v for k, v in structured.items() if k in allowed}
+
             # Enforce schema + defaults (no boilerplate strings)
             structured.setdefault("company", company_name)
             structured.setdefault("summary", "")
@@ -260,8 +243,6 @@ class ResearcherAgent:
 
             # Sources are taken directly from Tavily results as URLs; the LLM does not generate them
             structured["sources"] = sources_urls
-            print("[DEBUG] Final Researcher structured JSON:", structured)
-
 
             return HandoffMessage(
                 task_name=message.task_name,

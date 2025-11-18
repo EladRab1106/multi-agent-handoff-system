@@ -38,7 +38,6 @@ class HandoffMessage:
     status: str
     file_path: Optional[str] = None
     error: Optional[str] = None
-    meta: Dict[str, Any] = field(default_factory=dict)
 
 
 __all__ = ["HandoffMessage", "AgentName"]
