@@ -24,12 +24,6 @@ def write_report_file(
     company_name: str,
     fmt: Literal["markdown", "docx"] = "markdown",
 ) -> str:
-    """Write a report to the outputs folder and return the absolute file path.
-
-    Designed to be easy to unit test by checking for the existence and contents
-    of the generated file.
-    """
-
     _ensure_outputs_dir()
 
     timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")

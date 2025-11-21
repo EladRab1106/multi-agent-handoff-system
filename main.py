@@ -13,10 +13,6 @@ from langchain_openai import ChatOpenAI
 
 
 def build_model() -> ChatOpenAI:
-    """Instantiate the shared LLM for all agents.
-
-    Uses environment variables configured via .env (e.g., OPENAI_API_KEY).
-    """
     model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
     api_key = os.getenv("OPENAI_API_KEY")
@@ -26,7 +22,6 @@ def build_model() -> ChatOpenAI:
 
 
 def run_supervisor(company_name: str, model: Optional[ChatOpenAI] = None) -> HandoffMessage:
-    """Run the full supervisor-managed workflow for a given company name."""
     if not company_name or not company_name.strip():
         raise ValueError("company_name must be a non-empty string")
 
@@ -52,15 +47,6 @@ def run_supervisor(company_name: str, model: Optional[ChatOpenAI] = None) -> Han
 
 
 def main() -> None:
-    """CLI entrypoint.
-
-    Example interaction:
-      $ python main.py
-      Enter a company name to research: Check Point
-      ...
-    """
-    
-
     company_name = input("Enter a company name to research: ").strip()
     final_message = run_supervisor(company_name)
 

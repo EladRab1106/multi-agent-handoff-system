@@ -11,11 +11,6 @@ from utils.message_schema import HandoffMessage, AgentName
 
 
 class DocumentCreatorAgent:
-    """Agent that converts research JSON into a formatted report file.
-
-    It receives only structured research data and is solely responsible for
-    file creation and formatting.
-    """
 
     def __init__(self, model: ChatOpenAI) -> None:
         self.model = model
@@ -100,7 +95,7 @@ class DocumentCreatorAgent:
                 file_path=file_path,
             )
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return HandoffMessage(
                 task_name=message.task_name,
                 payload=message.payload,

@@ -11,11 +11,6 @@ from utils.message_schema import HandoffMessage, AgentName
 
 
 class SupervisorAgent:
-    """Supervisor that orchestrates the strict handoff workflow.
-
-    Workflow (fixed order):
-      User -> Supervisor -> Researcher -> Supervisor -> DocumentCreator -> Supervisor -> User
-    """
 
     def __init__(
         self,
@@ -27,7 +22,6 @@ class SupervisorAgent:
         self.researcher = researcher
         self.document_creator = document_creator
 
-        # Simple chain used when the supervisor needs to reason about the task
         system_prompt = (
             "You are a supervisor agent coordinating a research workflow. "
             "Your job is to understand the user request and pass clear, concise "
@@ -49,15 +43,9 @@ class SupervisorAgent:
         )
 
     def _interpret_request(self, user_request: str) -> str:
-        """Use the LLM to produce a concise research instruction."""
         return self._thinking_chain.invoke({"user_request": user_request}).strip()
 
     def run(self, message: HandoffMessage) -> HandoffMessage:
-        """Run the full workflow from the supervisor's perspective.
-
-        This method assumes it is called first with next_agent=SUPERVISOR and
-        task_name="research_company".
-        """
         try:
             if message.next_agent != AgentName.SUPERVISOR:
                 raise ValueError("Supervisor.run must be entered with next_agent=SUPERVISOR")
@@ -69,10 +57,8 @@ class SupervisorAgent:
             if not company_name:
                 raise ValueError("Supervisor requires 'company_name' in payload to start workflow")
 
-            # Step 1: Understand the task (but still pass only the company name downstream)
             _ = self._interpret_request(f"Research the company {company_name}")
 
-            # Step 2: Handoff to Researcher
             to_researcher = HandoffMessage(
                 task_name="company_research",
                 payload={"company_name": company_name},
@@ -90,7 +76,6 @@ class SupervisorAgent:
                     error=researcher_result.error or "Researcher did not complete successfully",
                 )
 
-            # Step 3: Handoff to Document Creator with structured research
             research_payload = researcher_result.payload
             to_doc = HandoffMessage(
                 task_name="create_report",
@@ -112,7 +97,6 @@ class SupervisorAgent:
                     error=doc_result.error or "Document creator did not produce a file",
                 )
 
-            # Step 4: Final response back to user
             return HandoffMessage(
                 task_name=message.task_name,
                 payload={
@@ -124,7 +108,7 @@ class SupervisorAgent:
                 file_path=doc_result.file_path,
             )
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return HandoffMessage(
                 task_name=message.task_name,
                 payload=asdict(message),
